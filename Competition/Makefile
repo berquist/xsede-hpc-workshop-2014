@@ -1,9 +1,14 @@
 CC = cc
-CFLAGS = -acc -ta=nvidia -Minfo=accel
+CFLAGS = -fast -Mipa=fast -Msmart -O4
+ACCFLAGS = -acc -ta=nvidia -Minfo=accel -lcudart -mcmodel=medium
+OMPFLAGS = -mp=nonuma
+SRCS = $(wildcard *.c)
+PROGS = $(patsubst %.c,%.exe,$(SRCS))
 
-all: prepare_env laplace_competition run
+all: $(PROGS)
 
-all_no_run: prepare_env laplace_competition
+%.exe: %.c
+	$(CC) $(CFLAGS) $(OMPFLAGS) $(ACCFLAGS) -o $@ $<
 
 prepare_env:
 	module swap PrgEnv-cray PrgEnv-pgi
@@ -11,29 +16,11 @@ prepare_env:
 	module load pgi/14.3.0
 	module load cudatoolkit
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+run_hybrid_gpu:
+	aprun -n 4 -N 1 laplace_competition_hybrid_gpu.exe
 
-laplace_competition: laplace_competition.o
-	$(CC) $(CFLAGS) -o laplace_competition.exe laplace_competition.o
-
-laplace_mpi_nonblock: laplace_mpi_nonblock.o
-	$(CC) $(CFLAGS) -o laplace_mpi_nonblock.exe laplace_mpi_nonblock.o
-
-laplace_mpi_only: laplace_mpi_only.o
-	$(CC) $(CFLAGS) -o laplace_mpi_only.exe laplace_mpi_only.o
-
-laplace_mpi_solution: laplace_mpi_solution.o
-	$(CC) $(CFLAGS) -o laplace_mpi_solution.exe laplace_mpi_solution.o
-
-laplace_serial: laplace_serial.o
-	$(CC) $(CFLAGS) -o laplace_serial.exe laplace_serial.o
-
-laplace_your_mpi: laplace_your_mpi.o
-	$(CC) $(CFLAGS) -o laplace_your_mpi.exe laplace_your_mpi.o
-
-run:
-	laplace_competition.exe
+run_hybrid_omp:
+	aprun -n 4 -d 16 -N 1 laplace_competition_hybrid_omp.exe
 
 .PHONY: clean
 
