@@ -2,3 +2,7 @@
 *.out
 *.o
 *.exe
+
+# Testing output
+*.dat
+*.txt
